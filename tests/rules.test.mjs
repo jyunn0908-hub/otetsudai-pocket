@@ -1,0 +1,43 @@
+import {readFile} from 'node:fs/promises';
+import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
+import {doc,setDoc,getDoc,getDocs,collection,query,where,updateDoc,runTransaction} from 'firebase/firestore';
+import {approve,initialState} from '../dist/domain.mjs';
+import assert from 'node:assert/strict';
+const env=await initializeTestEnvironment({projectId:'demo-otetsudai',firestore:{rules:await readFile(new URL('../firestore.rules',import.meta.url),'utf8')}});
+try{
+ const parent=env.authenticatedContext('parent',{firebase:{sign_in_provider:'password'}}).firestore();
+ const kid=env.authenticatedContext('kid',{firebase:{sign_in_provider:'anonymous'}}).firestore();
+ const outsider=env.authenticatedContext('other',{firebase:{sign_in_provider:'password'}}).firestore();
+ const unauth=env.unauthenticatedContext().firestore();
+ const family=db=>doc(db,'families','parent');
+ await assertSucceeds(setDoc(family(parent),initialState()));
+ await assertFails(getDoc(family(kid)));await assertFails(getDoc(family(outsider)));await assertFails(getDoc(family(unauth)));
+ await assertFails(setDoc(doc(kid,'families','kid'),initialState()));
+ await assertSucceeds(getDoc(doc(kid,'families','parent','members','kid')));
+ await assertSucceeds(setDoc(doc(kid,'families','parent','joins','kid'),{name:'テスト',status:'pending'}));
+ await assertFails(setDoc(doc(kid,'families','parent','members','kid'),{name:'テスト'}));
+ await assertFails(updateDoc(doc(kid,'families','parent','joins','kid'),{status:'approved'}));
+ await assertSucceeds(setDoc(doc(parent,'families','parent','members','kid'),{name:'テスト'}));
+ const initial=initialState();initial.accounts.kid={name:'テスト',points:70};await setDoc(family(parent),initial);
+ await assertSucceeds(getDoc(family(kid)));
+ await assertFails(updateDoc(family(kid),{'accounts.kid.points':9999}));
+ const id='kid_clean_2026-10-03',r={uid:'kid',type:'chore',itemId:'clean',day:'2026-10-03',status:'pending',at:Date.now()};
+ const req=db=>doc(db,'families','parent','requests',id);
+ await assertSucceeds(setDoc(req(kid),r));
+ await assertFails(setDoc(doc(kid,'families','parent','requests','fake-key'),r));
+ await assertFails(updateDoc(req(kid),{status:'approved'}));
+ await assertFails(getDoc(req(outsider)));
+ await assertSucceeds(getDocs(query(collection(kid,'families','parent','requests'),where('uid','==','kid'))));
+ await assertFails(getDocs(collection(kid,'families','parent','requests')));
+ await updateDoc(req(parent),{status:'rejected'});
+ await assertSucceeds(setDoc(req(kid),{...r,at:Date.now()+1}));
+ await updateDoc(req(parent),{status:'rejected'});
+ await assertFails(setDoc(req(kid),{...r,itemId:'dishes'}));
+ await setDoc(req(kid),{...r,at:Date.now()+2});
+ async function accept(requestId){return runTransaction(parent,async tx=>{const fr=family(parent),rr=doc(parent,'families','parent','requests',requestId);const [s,r]=await Promise.all([tx.get(fr),tx.get(rr)]);if(r.data().status!=='pending')throw Error('processed');tx.set(fr,approve(s.data(),r.data(),requestId));tx.update(rr,{status:'approved'})})}
+ const concurrent=await Promise.allSettled([accept(id),accept(id)]);assert.equal(concurrent.filter(r=>r.status==='fulfilled').length,1);assert.equal((await getDoc(family(parent))).data().accounts.kid.points,100);
+ for(const id of ['exchange1','exchange2'])await setDoc(doc(kid,'families','parent','requests',id),{...r,type:'reward',itemId:'snack'});
+ const exchanges=await Promise.allSettled([accept('exchange1'),accept('exchange2')]);assert.equal(exchanges.filter(r=>r.status==='fulfilled').length,1);assert.equal((await getDoc(family(parent))).data().accounts.kid.points,0);
+ await assertFails(updateDoc(req(kid),{status:'pending'}));
+ console.log('PASS: 家族外の読取禁止、未承認参加、親なりすまし禁止、子供の残高変更禁止、申請と再申請、同時二重承認、同時交換の残高保護');
+}finally{await env.cleanup()}
