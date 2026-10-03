@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function parent(family) { return signedIn() && request.auth.uid == family && request.auth.token.firebase.sign_in_provider != 'anonymous'; }
+    function child(family) { return signedIn() && exists(/databases/$(database)/documents/families/$(family)/members/$(request.auth.uid)); }
+    match /families/{family} {
+      allow get: if parent(family) || child(family);
+      allow list: if false;
+      allow create, update: if parent(family);
+      allow delete: if false;
+      match /members/{uid} {
+        allow get: if parent(family) || (signedIn() && request.auth.uid == uid);
+        allow list, write: if parent(family);
+      }
+      match /joins/{uid} {
+        allow get: if parent(family) || (signedIn() && request.auth.uid == uid);
+        allow list: if parent(family);
+        allow create: if signedIn() && request.auth.uid == uid
+          && request.auth.token.firebase.sign_in_provider == 'anonymous'
+          && exists(/databases/$(database)/documents/families/$(family))
+          && request.resource.data.keys().hasOnly(['name', 'status'])
+          && request.resource.data.name is string
+          && request.resource.data.name.size() > 0 && request.resource.data.name.size() <= 20
+          && request.resource.data.status == 'pending';
+        allow update, delete: if parent(family);
+      }
+      match /requests/{id} {
+        allow read: if parent(family) || (child(family) && resource.data.uid == request.auth.uid);
+        allow create: if child(family)
+          && request.resource.data.keys().hasOnly(['uid','type','itemId','day','status','at'])
+          && request.resource.data.uid == request.auth.uid
+          && request.resource.data.type in ['chore','reward']
+          && request.resource.data.itemId is string && request.resource.data.itemId.size() <= 64
+          && request.resource.data.day is string && request.resource.data.day.matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$')
+          && request.resource.data.at is number
+          && request.resource.data.status == 'pending'
+          && (request.resource.data.type == 'reward' || id == request.auth.uid + '_' + request.resource.data.itemId + '_' + request.resource.data.day);
+        allow update: if parent(family)
+          && resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status'])
+          && request.resource.data.status in ['approved','rejected'];
+        allow update: if child(family) && resource.data.uid == request.auth.uid
+          && resource.data.status == 'rejected' && request.resource.data.status == 'pending'
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['status','at'])
+          && request.resource.data.at is number;
+        allow delete: if false;
+      }
+    }
+  }
+}
