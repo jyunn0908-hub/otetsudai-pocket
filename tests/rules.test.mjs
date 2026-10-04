@@ -1,3 +1,4 @@
+import {advance,archive,nextEgg,grow} from '../dist/growth.mjs';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
 import {doc,setDoc,getDoc,getDocs,collection,query,where,updateDoc,runTransaction} from 'firebase/firestore';
@@ -39,5 +40,29 @@ try{
  for(const id of ['exchange1','exchange2'])await setDoc(doc(kid,'families','parent','requests',id),{...r,type:'reward',itemId:'snack'});
  const exchanges=await Promise.allSettled([accept('exchange1'),accept('exchange2')]);assert.equal(exchanges.filter(r=>r.status==='fulfilled').length,1);assert.equal((await getDoc(family(parent))).data().accounts.kid.points,0);
  await assertFails(updateDoc(req(kid),{status:'pending'}));
+ // Existing approval race also grants growth exactly once; exchanges never grant growth.
+ let saved=(await getDoc(family(parent))).data();assert.equal(saved.growth.points,10);
+ await assertFails(updateDoc(family(kid),{'growth.points':9999}));
+ await assertFails(updateDoc(family(kid),{'growth.character':'mokumo','growth.stage':4}));
+ const start=Date.parse('2026-10-01T00:00:00+09:00'),finish=start+20*86400000;
+ saved.growth={...grow(null,'cycle-one',start,'seed'),points:230,count:23};
+ await setDoc(family(parent),saved);
+ async function evolve(){return runTransaction(parent,async tx=>{const ref=family(parent),snap=await tx.get(ref),before=snap.data().growth,after=advance(before,finish,'seed');if(before.stage===after.stage)return;tx.update(ref,{growth:after});tx.set(doc(parent,'families','parent','growthHistory',after.id),archive(after))})}
+ const evolutionResults=await Promise.allSettled([evolve(),evolve()]);assert.ok(evolutionResults.some(r=>r.status==='fulfilled'));
+ let completed=(await getDoc(family(parent))).data().growth;assert.equal(completed.stage,4);
+ const hist=db=>doc(db,'families','parent','growthHistory',completed.id);
+ await assertSucceeds(getDoc(hist(kid)));await assertFails(getDoc(hist(outsider)));await assertFails(getDoc(hist(unauth)));
+ await assertFails(setDoc(doc(kid,'families','parent','growthHistory','fake'),archive(completed)));
+ await assertFails(updateDoc(hist(kid),{count:999}));await assertFails(updateDoc(hist(parent),{count:999}));
+ assert.equal((await getDocs(collection(parent,'families','parent','growthHistory'))).size,1);
+ async function reset(){return runTransaction(parent,async tx=>{const ref=family(parent),snap=await tx.get(ref);tx.update(ref,{growth:nextEgg(snap.data().growth,'cycle-two')})})}
+ const resets=await Promise.allSettled([reset(),reset()]);assert.equal(resets.filter(x=>x.status==='fulfilled').length,1);
+ assert.equal((await getDoc(family(kid))).data().growth.stage,0);
+ assert.equal((await getDoc(hist(kid))).data().count,23);
+ const newKid=env.authenticatedContext('new-kid',{firebase:{sign_in_provider:'anonymous'}}).firestore();
+ await setDoc(doc(parent,'families','parent','members','new-kid'),{name:'子'});
+ await assertSucceeds(getDoc(hist(newKid)));
+ assert.equal((await getDoc(family(newKid))).data().growth.id,'cycle-two');
+ console.log('PASS: 成長の二重付与防止、交換独立、子供の成長・進化・図鑑改ざん禁止、家族外アクセス禁止、同時進化の図鑑一件、次サイクル競合、保存後復帰・新端末での読取');
  console.log('PASS: 家族外の読取禁止、未承認参加、親なりすまし禁止、子供の残高変更禁止、申請と再申請、同時二重承認、同時交換の残高保護');
 }finally{await env.cleanup()}
