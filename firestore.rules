@@ -9,6 +9,14 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if parent(family);
       allow delete: if false;
+      match /growthHistory/{cycleId} {
+        allow read: if parent(family) || child(family);
+        allow create: if parent(family)
+          && request.resource.data.cycleId == cycleId
+          && getAfter(/databases/$(database)/documents/families/$(family)).data.growth.id == cycleId
+          && getAfter(/databases/$(database)/documents/families/$(family)).data.growth.stage == 4;
+        allow update, delete: if false;
+      }
       match /members/{uid} {
         allow get: if parent(family) || (signedIn() && request.auth.uid == uid);
         allow list, write: if parent(family);
