@@ -1,5 +1,5 @@
 import {advance,archive,nextEgg} from './growth.mjs';
-import {growthContent,growthNotice} from './growth-view.mjs';
+import {growthContent,growthNotice} from './growth-view.mjs?art=6';
 import {firebaseConfig} from './config.js';
 import {initialState,dayKey,approve,validateItem} from './domain.mjs';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
