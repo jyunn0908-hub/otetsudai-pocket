@@ -1,4 +1,4 @@
-import {grow} from './growth.mjs?art=7';
+import {grow} from './growth.mjs?art=8';
 export function initialState(){return {chores:[{id:'dishes',title:'食器をかたづける',points:10,emoji:'🍽️'},{id:'laundry',title:'洗たくものをたたむ',points:20,emoji:'👕'},{id:'plants',title:'お花に水をあげる',points:10,emoji:'🌱'},{id:'clean',title:'おへやをそうじする',points:30,emoji:'🧹'}],rewards:[{id:'snack',title:'好きなおやつ',points:100,emoji:'🍩'},{id:'game',title:'ゲームを30分プラス',points:150,emoji:'🎮'},{id:'outing',title:'行きたい場所へおでかけ',points:500,emoji:'🎡'}],accounts:{},history:[]}}
 export function dayKey(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date())}
 export function approve(state,req,id,now=Date.now(),seed=id){

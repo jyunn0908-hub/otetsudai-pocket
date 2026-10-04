@@ -10,9 +10,20 @@
 @media(max-width:600px){.pixel-pet{width:144px;height:144px}.growth-memory .pixel-pet{width:96px;height:96px}}
 .pet-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px}.pet-card{display:grid;justify-items:center;padding:24px 12px;background:#fffdf5;border:1px solid #e4e6d8;border-radius:20px;text-align:center}.pet-card h2{font-size:18px}.pet-card .pixel-pet{width:144px;height:144px}.pet-gallery-page{max-width:1100px;margin:auto;padding:24px}.pet-gallery-page header{padding:0}.pet-gallery-page button{margin-top:12px}
 
-/* Deliberate frame holds, integer pixel offsets: no smooth interpolation. */
-.creature{animation:pet-idle-frames 3.2s steps(1,end) infinite;transition:none;transform-origin:50% 80%}
-.celebrate .creature{animation:pet-joy-frames 1.2s steps(1,end) 1,pet-idle-frames 3.2s steps(1,end) 1.2s infinite}
-@keyframes pet-idle-frames{0%,62%,100%{transform:translate(0,0)}68%,75%{transform:translate(0,-4px)}82%,89%{transform:translate(4px,0)}94%{transform:translate(0,0)}}
-@keyframes pet-joy-frames{0%,45%,95%,100%{transform:translate(0,0)}8%,35%,58%,85%{transform:translate(0,-8px)}16%,27%,66%,77%{transform:translate(0,-20px)}}
-@media(prefers-reduced-motion:reduce){.creature,.celebrate .creature{animation:none!important;transform:none!important}}
+/* Three drawings switch on held frames: open eyes, blink/step, and raised-limb joy. */
+.creature{animation:pet-idle-step 3.2s steps(1,end) infinite;transition:none;transform-origin:50% 80%}
+.pet-frame{image-rendering:pixelated;pointer-events:none}
+.pet-frame-normal{opacity:1;animation:pet-normal-drawing 3.2s steps(1,end) infinite}
+.pet-frame-idle{opacity:0;animation:pet-idle-drawing 3.2s steps(1,end) infinite}
+.pet-frame-joy{opacity:0}
+.celebrate .creature{animation:pet-joy-step 1.2s steps(1,end) 1}
+.celebrate .pet-frame-normal{animation:pet-joy-normal-drawing 1.2s steps(1,end) 1 forwards}
+.celebrate .pet-frame-idle{animation:none;opacity:0}
+.celebrate .pet-frame-joy{animation:pet-joy-drawing 1.2s steps(1,end) 1 forwards}
+@keyframes pet-normal-drawing{0%,61%,77%,100%{opacity:1}62%,76%{opacity:0}}
+@keyframes pet-idle-drawing{0%,61%,77%,100%{opacity:0}62%,76%{opacity:1}}
+@keyframes pet-idle-step{0%,61%,77%,100%{transform:translate(0,0)}62%,76%{transform:translate(4px,-4px)}}
+@keyframes pet-joy-normal-drawing{0%,7%,92%,100%{opacity:1}8%,91%{opacity:0}}
+@keyframes pet-joy-drawing{0%,7%,92%,100%{opacity:0}8%,91%{opacity:1}}
+@keyframes pet-joy-step{0%,45%,92%,100%{transform:translate(0,0)}8%,35%,58%,82%{transform:translate(0,-8px)}16%,27%,66%,74%{transform:translate(0,-20px)}}
+@media(prefers-reduced-motion:reduce){.creature,.celebrate .creature,.pet-frame,.celebrate .pet-frame{animation:none!important;transform:none!important}.pet-frame-normal{opacity:1!important}.pet-frame-idle,.pet-frame-joy{opacity:0!important}}
