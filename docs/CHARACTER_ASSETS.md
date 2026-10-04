@@ -2,11 +2,21 @@
 
 コンセプトは `assets/character-concept.png`。ユーザー指定に合わせ、丸い体・短い手足・簡単な装飾にデフォルメした。
 
-`dist/characters.png` はゲーム用20姿のアトラス。元画像は1402×1122pxで、ピクセル単位で仕上げた48×48の完成素材とは区別する。描画は `growth-view.mjs` の矩形で切り出し、補間なしで表示。表示枠は48pxの整数倍（144/192px、履歴96px）。
+`dist/characters.png` はゲーム用20姿の通常アトラス。`dist/characters-idle.png` は閉じ目と踏み替え、`dist/characters-joy.png` は喜んだ目と上げた手足・翼を描き替えた同配置のアトラス。いずれも1402×1122pxで、ピクセル単位で仕上げた48×48の完成素材とは区別する。描画は `growth-view.mjs` の矩形で切り出し、補間なしで表示。表示枠は48pxの整数倍（144/192px、履歴96px）。
 
 `dist/characters.html` に10種類の最終形態の見本と「よろこぶ」ボタンを用意。進化先を先に見せないため、子供の育成画面から直接リンクしない。この見本はポイントや図鑑を変更しない。
 
-動きは `steps(1,end)` でコマを保持する方式。待機は長く静止した後4pxずつちょこんと移動、喜びは0→8→20pxと段階的に2回ジャンプ。現在は同じ絵の位置を切り替える演出であり、手足を描き替えた複数フレームではない。動きを減らす設定では静止と文言のみ。
+動きは `steps(1,end)` でコマを保持する方式。待機中は通常絵から閉じ目・踏み替え絵へ切り替え、喜びでは喜び絵へ切り替えて段階的に2回ジャンプする。動きを減らす設定では通常絵で静止し、文言のみで気持ちを伝える。
+
+## アニメーション差分の制作プロンプト
+
+待機コマ:
+
+> Use case: precise-object-edit. Asset: animation frame atlas for a pixel virtual-pet game. Edit the attached 5-column x 4-row transparent sprite atlas into an IDLE SECOND FRAME. Preserve exactly all 20 character identities, exact order, colors, scale, canvas size, transparent background, centered placement, and generous cell gutters. Change actual drawing pixels: close or half-close every visible character eye into a simple horizontal pixel blink; shift alternating front feet/paws by a few coarse pixels to create a tiny step; for winged characters fold or lower wings slightly; for egg, tilt the top by a few pixels while keeping the same shell design. Keep bodies in almost identical position so switching frames does not jump. Coarse modern pixel art, no antialiasing, no labels, no borders, no added objects, no stray pixels, no scenery. This is frame B paired with the supplied frame A, so identity consistency is the top priority.
+
+喜びコマ:
+
+> Use case: precise-object-edit. Asset: animation frame atlas for a pixel virtual-pet game. Edit the attached 5-column x 4-row transparent sprite atlas into a JOY FRAME. Preserve exactly all 20 identities, exact order, colors, scale, canvas size, transparent background, cell positions, and generous gutters. Redraw actual pixels for an excited pose: eyes become happy upward arcs or bright wide eyes; mouths become happy; lift both front paws/feet or alternate them clearly; tails tilt upward; rabbit ears bounce outward; turtle lifts one front foot while remaining clearly four-legged; dragons spread wings a little; phoenix raises wings; cloud fairy puffs expand; golem lifts both arms; egg gains a small visible zigzag crack but stays an egg. Keep each body centered near the original baseline and fully inside its cell. Coarse modern pixel art, no antialiasing, no labels, no borders, no motion lines, no added scenery or floating objects. This is frame C paired with supplied frame A; identity and cell registration are critical.
 
 新規育成は2つの第1段階→6つの第2段階→10種の最終形態。各段階は候補内でランダム。旧IDと経路は保持し、既存の図鑑を読み込めるよう絵を対応付けた。日数・必要ポイント・権限は変更しない。
 
@@ -25,4 +35,3 @@ All fully inside their cells, consistent palette/outline pixel scale and baselin
 ## 修正
 
 Edit this sprite atlas into a clean PRODUCTION atlas. Preserve all twenty identities, same EXACT 5 column x 4 row row-major order. Critical: each sprite MUST be centered in its equal square cell and occupy only the inner 65% of that cell, with at least 17% fully TRANSPARENT margin on ALL four sides. No pixels may spill into an adjacent cell. Remove all stray pixels. Use uniform pixel scale. Simplify further to a much coarser low resolution friendly virtual pet look, about 32 by 32 meaningful pixels per character (upscaled pixel art), rounded two-head-tall bodies, tiny stubby feet and big readable eyes, flat limited 5 colors plus one shadow. No painterly gradients, no fine detail, no subtle antialiasing. Keep all ten final species recognizable including clearly FOUR-LEGGED turtle. Final phoenix/dragon wings must fit with generous margin. Actual transparent alpha background. No labels, no lines, no border, no shadows. Canvas aspect 5:4, perfectly regular 5x4 grid. This will be shown using exact 5x4 CSS cropping, so transparent gutter and centering are mandatory.
-
