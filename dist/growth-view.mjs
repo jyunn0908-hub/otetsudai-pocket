@@ -1,4 +1,4 @@
-import {CREATURES,STAGE_NAMES,MILESTONES,growthDay} from './growth.mjs?art=8';
+import {CREATURES,STAGE_NAMES,MILESTONES,growthDay} from './growth.mjs?art=9';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 // Explicit crop rectangles keep AI atlas gutters and neighboring pixels out of the app.
 const SPRITE_RECTS=[
