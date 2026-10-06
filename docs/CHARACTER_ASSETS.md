@@ -1,37 +1,38 @@
-# キャラクター画像と表示
+# 48×48ピクセルキャラクター（2026-10-07）
 
-コンセプトは `assets/character-concept.png`。ユーザー指定に合わせ、丸い体・短い手足・簡単な装飾にデフォルメした。
+切り抜きに見えるというフィードバックに基づき、20姿を太いドット・短い手足・簡潔な表情へ描き直した。コンセプト画像は参考として保持し、そこから絵を切り抜いて使用しない。
 
-`dist/characters.png` はゲーム用20姿の通常アトラス。`dist/characters-idle.png` は閉じ目と踏み替え、`dist/characters-joy.png` は喜んだ目と上げた手足・翼を描き替えた同配置のアトラス。いずれも1402×1122pxで、ピクセル単位で仕上げた48×48の完成素材とは区別する。描画は `growth-view.mjs` の矩形で切り出し、補間なしで表示。表示枠は48pxの整数倍（144/192px、履歴96px）。
+## 素材と表示
 
-`dist/characters.html` に10種類の最終形態の見本と「よろこぶ」ボタンを用意。進化先を先に見せないため、子供の育成画面から直接リンクしない。この見本はポイントや図鑑を変更しない。
+- `dist/pets-pixel-normal.png`：通常コマ
+- `dist/pets-pixel-idle.png`：閉じ目・踏み替え
+- `dist/pets-pixel-joy.png`：笑顔・手足や翼を上げるコマ
+- `dist/pixel-sprites.mjs`：48×48 Canvasへ補間なしで描画し、半透明の縁を二値化。結果をキャッシュする。
+- `dist/growth-view.mjs`：既存IDを新しい表示へ対応付ける。
 
-動きは `steps(1,end)` でコマを保持する方式。待機中は通常絵から閉じ目・踏み替え絵へ切り替え、喜びでは喜び絵へ切り替えて段階的に2回ジャンプする。動きを減らす設定では通常絵で静止し、文言のみで気持ちを伝える。
+生成元PNGは大きな5列×4行アトラス。アプリの実表示は48×48のラスターで、96/144/192pxの整数倍に拡大する。原画の切り抜きをそのまま縮小表示していた旧方式は使用しない。旧 `characters*.png` は比較用に残すが、表示や新サービスワーカーの事前キャッシュから参照しない。
 
-## アニメーション差分の制作プロンプト
+待機・喜びは目や手足を描き替えた別画像で、stepsアニメーションで切り替える。動きを減らす設定では静止。庭・育成・図鑑・見本で共通レンダラーを使用し、成長条件・保存ID・獲得記録には変更を加えない。
 
-待機コマ:
+## 制作方法と最終プロンプト
 
-> Use case: precise-object-edit. Asset: animation frame atlas for a pixel virtual-pet game. Edit the attached 5-column x 4-row transparent sprite atlas into an IDLE SECOND FRAME. Preserve exactly all 20 character identities, exact order, colors, scale, canvas size, transparent background, centered placement, and generous cell gutters. Change actual drawing pixels: close or half-close every visible character eye into a simple horizontal pixel blink; shift alternating front feet/paws by a few coarse pixels to create a tiny step; for winged characters fold or lower wings slightly; for egg, tilt the top by a few pixels while keeping the same shell design. Keep bodies in almost identical position so switching frames does not jump. Coarse modern pixel art, no antialiasing, no labels, no borders, no added objects, no stray pixels, no scenery. This is frame B paired with the supplied frame A, so identity consistency is the top priority.
+built-in image_gen を使用。最初の詳細な候補は不採用。以下の単純化した新規生成と2種の差分を使用。
 
-喜びコマ:
+### 通常コマ
 
-> Use case: precise-object-edit. Asset: animation frame atlas for a pixel virtual-pet game. Edit the attached 5-column x 4-row transparent sprite atlas into a JOY FRAME. Preserve exactly all 20 identities, exact order, colors, scale, canvas size, transparent background, cell positions, and generous gutters. Redraw actual pixels for an excited pose: eyes become happy upward arcs or bright wide eyes; mouths become happy; lift both front paws/feet or alternate them clearly; tails tilt upward; rabbit ears bounce outward; turtle lifts one front foot while remaining clearly four-legged; dragons spread wings a little; phoenix raises wings; cloud fairy puffs expand; golem lifts both arms; egg gains a small visible zigzag crack but stays an egg. Keep each body centered near the original baseline and fully inside its cell. Coarse modern pixel art, no antialiasing, no labels, no borders, no motion lines, no added scenery or floating objects. This is frame C paired with supplied frame A; identity and cell registration are critical.
+Generate a sprite sheet of extremely simple TRUE LOW RESOLUTION game pixel art. This is a fresh redesign, NOT a cutout of an illustration. Think tiny 1990s handheld virtual pets: each creature ONLY 20 to 28 pixels tall, VERY LARGE square pixel blocks, eyes just ONE or TWO black pixel squares, tiny 1-pixel mouth, short stubby feet. Flat 4-color fill + dark outline. No details smaller than a big square pixel. No glow, gradients, antialias, smooth vector curves, realistic drawing, texture, floating sparkles, text, grid lines, labels, ground or shadows. Genuine transparent alpha background.
+Production grid EXACTLY 5 columns and 4 rows, equal square cells. Canvas 1200 x 960. Each cell 240 square pixels representing logical48x48. Each character occupies only centered inner 140x140 physical pixels (28x28 logical pixels), with generous 50px transparent margin ON ALL SIDES. Pixel blocks exactly5x5. This generous spacing is crucial. Plain cute round blobs decorated with species-defining SIMPLE silhouette shapes. No elaborate mature dragons or ornamental pets. SMALL, SIMPLE, CHUNKY and ICONIC.
+20 cells in order:
+1 egg cream/green; 2 cream round baby with tiny ears; 3 green sprout blob; 4 lavender tiny point-eared blob; 5 brown leaf-eared squirrel.
+6 blue round four-foot turtle green shell; 7 purple small cat; 8 blue small winged dragon; 9 orange small fire chick; 10 white small cloud blob.
+11 cream rabbit with long ears and tiny gold star; 12 brown squirrel big curled tail green leaf; 13 orange cream cat green scarf; 14 wide blue turtle green shell with four clearly visible blocky feet; 15 cream orange fox three short flame tails.
+16 dark-purple cat big pointed ears violet tail; 17 blue dragon with TWO triangular wings and curled tail; 18 orange phoenix with TWO spread flame wings; 19 white cloud fairy gold halo; 20 gray blocky rock golem two mossy shoulders.
+Consistent square pixel grid, no fine detail. Result should resemble sprites that a pixel artist deliberately places one square at a time, NOT a detailed illustration with a pixelation filter.
 
-新規育成は2つの第1段階→6つの第2段階→10種の最終形態。各段階は候補内でランダム。旧IDと経路は保持し、既存の図鑑を読み込めるよう絵を対応付けた。日数・必要ポイント・権限は変更しない。
+### 待機コマ
 
-制作方法: built-in image_gen。以下が生成・修正プロンプト。
+undefined
 
-## 生成
+### 喜びコマ
 
-Create ONE production game sprite atlas, PNG with transparent background. Use attached concept only as a visual reference for species, NOT as artwork to crop. Redesign into much simpler rounded friendly virtual-pet pixel art, coarse intentional pixels like a 1990s pocket pet, two-head-tall, readable eyes, 4-5 main colors plus simple shadow, no elaborate tiny ornamental detail. Dark cat, sky dragon, phoenix still slightly cool but friendly. EXACT regular grid 5 COLUMNS x 4 ROWS, every cell same square size, centered with generous transparent padding, no labels, text, borders, arrows, scenery or shadows outside creatures. 20 distinct sprites ONE per cell. Think each occupies a 32x32 or 48x48 low resolution pixel canvas enlarged with nearest neighbor. No antialiased/vector style. Baby small, juvenile medium, final larger and distinct silhouette.
-Cell order row-major:
-ROW1: (1) cream egg green spots; (2) tiny round neutral cream baby blob with stubby feet; (3) small green sprout round creature leaf on head; (4) small purple wisp creature with short ears; (5) medium brown forest creature leaf ears and curled tail.
-ROW2: (1) medium blue water creature on FOUR legs small shell; (2) medium purple shadow cat pointed ears crescent tail; (3) medium blue sky creature with little wings and horns; (4) medium orange fire bird small wings; (5) medium white cloud spirit with a small star.
-ROW3 FINALS: (1) light rabbit, cream long ears golden little star and fluffy tail; (2) forest squirrel brown round big curled leafy tail; (3) sunlit calico cat orange cream leaf scarf; (4) blue water TURTLE, broad green shell tiny flower, clearly FOUR feet and horizontal turtle silhouette; (5) fire fox cream orange with 3 simple flame tails.
-ROW4 FINALS: (1) dark cat dark purple, pointed ears, fluffy crescent tail simple violet aura; (2) sky dragon blue white, rounded body larger wings small horns long curled tail; (3) phoenix red orange gold spread big wings, friendly eyes, clear bird feet; (4) cloud fairy white pale blue fluffy round cloud ears star/halo; (5) rock golem grey brown friendly squat stone body moss tuft thick arms.
-All fully inside their cells, consistent palette/outline pixel scale and baseline. Make final sprites rounded and simplified, much less elaborate than reference. Grid dimensions are essential for CSS sprite extraction; exact equally spaced 5x4 cells.
-
-## 修正
-
-Edit this sprite atlas into a clean PRODUCTION atlas. Preserve all twenty identities, same EXACT 5 column x 4 row row-major order. Critical: each sprite MUST be centered in its equal square cell and occupy only the inner 65% of that cell, with at least 17% fully TRANSPARENT margin on ALL four sides. No pixels may spill into an adjacent cell. Remove all stray pixels. Use uniform pixel scale. Simplify further to a much coarser low resolution friendly virtual pet look, about 32 by 32 meaningful pixels per character (upscaled pixel art), rounded two-head-tall bodies, tiny stubby feet and big readable eyes, flat limited 5 colors plus one shadow. No painterly gradients, no fine detail, no subtle antialiasing. Keep all ten final species recognizable including clearly FOUR-LEGGED turtle. Final phoenix/dragon wings must fit with generous margin. Actual transparent alpha background. No labels, no lines, no border, no shadows. Canvas aspect 5:4, perfectly regular 5x4 grid. This will be shown using exact 5x4 CSS cropping, so transparent gutter and centering are mandatory.
+undefined
