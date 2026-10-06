@@ -1,7 +1,9 @@
+import * as firestore from 'firebase/firestore';
+import {savePlacement} from '../dist/garden.mjs';
 import {advance,archive,nextEgg,grow} from '../dist/growth.mjs';
 import {readFile} from 'node:fs/promises';
 import {initializeTestEnvironment,assertFails,assertSucceeds} from '@firebase/rules-unit-testing';
-import {doc,setDoc,getDoc,getDocs,collection,query,where,updateDoc,runTransaction} from 'firebase/firestore';
+import {doc,setDoc,getDoc,getDocs,collection,query,where,updateDoc,deleteDoc,runTransaction} from 'firebase/firestore';
 import {approve,initialState} from '../dist/domain.mjs';
 import assert from 'node:assert/strict';
 const env=await initializeTestEnvironment({projectId:'demo-otetsudai',firestore:{rules:await readFile(new URL('../firestore.rules',import.meta.url),'utf8')}});
@@ -63,6 +65,34 @@ try{
  await setDoc(doc(parent,'families','parent','members','new-kid'),{name:'子'});
  await assertSucceeds(getDoc(hist(newKid)));
  assert.equal((await getDoc(family(newKid))).data().growth.id,'cycle-two');
+ const garden=(db,id='starter-bench')=>doc(db,'families','parent','garden',id);
+ const placement={kind:'bench',x:3,y:4};
+ await assertSucceeds(setDoc(garden(kid),placement));
+ await assertSucceeds(getDoc(garden(newKid)));
+ await assertSucceeds(getDocs(collection(kid,'families','parent','garden')));
+ await assertSucceeds(updateDoc(garden(parent),{x:4}));
+ await assertFails(getDoc(garden(outsider)));await assertFails(getDoc(garden(unauth)));
+ await assertFails(setDoc(garden(outsider),placement));await assertFails(deleteDoc(garden(outsider)));
+ await assertFails(setDoc(garden(kid,'unowned'),placement));
+ for(const invalid of [{...placement,x:0},{...placement,x:19},{...placement,y:11},{...placement,x:15,y:3},{...placement,x:1.5},{...placement,kind:'pot'},{...placement,points:1000}])await assertFails(setDoc(garden(kid),invalid));
+ await assertFails(updateDoc(family(kid),{gardenInventory:{fake:'bench'},gardenUnlocked:true}));
+ await assertSucceeds(updateDoc(family(parent),{gardenInventory:{'find-3':'pot'}}));
+ await assertSucceeds(setDoc(garden(kid,'find-3'),{kind:'pot',x:5,y:5}));
+ await assertSucceeds(savePlacement(firestore,kid,'parent','starter-bench',[6,6]));
+ assert.deepEqual((await getDoc(garden(parent))).data(),{kind:'bench',x:6,y:6});
+ const placements=await Promise.allSettled([
+  savePlacement(firestore,kid,'parent','starter-bench',[8,8]),
+  savePlacement(firestore,parent,'parent','starter-pot',[8,8])
+ ]);assert.equal(placements.filter(r=>r.status==='fulfilled').length,1);
+ // Full inventories remain editable within the transaction/rules access limits.
+ await updateDoc(family(parent),{gardenInventory:Object.fromEntries(Array.from({length:60},(_,i)=>['find-'+i,'pot']))});
+ await assertSucceeds(savePlacement(firestore,newKid,'parent','find-59',[12,8]));
+ assert.equal((await getDoc(garden(parent,'find-59'))).data().x,12);
+ await assertSucceeds(savePlacement(firestore,kid,'parent','starter-bench',null));
+ assert.equal((await getDoc(garden(parent))).exists(),false);
+ await assertSucceeds(deleteDoc(doc(parent,'families','parent','members','kid')));
+ await assertFails(getDoc(garden(kid,'find-3')));await assertFails(setDoc(garden(kid),placement));
+ console.log('PASS: 庭の家族共有・子供の配置と片付け・持ち物偽造/家族外/無効座標/権限剥奪の拒否');
  console.log('PASS: 成長の二重付与防止、交換独立、子供の成長・進化・図鑑改ざん禁止、家族外アクセス禁止、同時進化の図鑑一件、次サイクル競合、保存後復帰・新端末での読取');
  console.log('PASS: 家族外の読取禁止、未承認参加、親なりすまし禁止、子供の残高変更禁止、申請と再申請、同時二重承認、同時交換の残高保護');
 }finally{await env.cleanup()}
