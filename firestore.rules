@@ -9,6 +9,25 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if parent(family);
       allow delete: if false;
+      match /garden/{itemId} {
+        function ownsFurniture() {
+          let starters = {'starter-bench':'bench','starter-pot':'pot','starter-cushion':'cushion','starter-table':'table'};
+          let familyData = get(/databases/$(database)/documents/families/$(family)).data;
+          let kind = request.resource.data.kind;
+          return (itemId in starters && kind == starters[itemId])
+            || ('gardenInventory' in familyData && itemId in familyData.gardenInventory && kind == familyData.gardenInventory[itemId]);
+        }
+        allow read, delete: if parent(family) || child(family);
+        allow create, update: if (parent(family) || child(family))
+          && request.resource.data.keys().hasAll(['kind','x','y'])
+          && request.resource.data.keys().hasOnly(['kind','x','y'])
+          && request.resource.data.kind in ['bench','pot','cushion','table']
+          && request.resource.data.x is int && request.resource.data.y is int
+          && request.resource.data.x >= 1 && request.resource.data.x <= 18
+          && request.resource.data.y >= 1 && request.resource.data.y <= 10
+          && !(request.resource.data.x >= 15 && request.resource.data.y <= 3)
+          && ownsFurniture();
+      }
       match /growthHistory/{cycleId} {
         allow read: if parent(family) || child(family);
         allow create: if parent(family)

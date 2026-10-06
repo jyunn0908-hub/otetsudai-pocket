@@ -1,1 +1,1 @@
-{"name":"otetsudai-pocket","private":true,"type":"module","scripts":{"preview":"python3 -m http.server 4173 --bind 127.0.0.1 --directory dist","test":"node --test tests/domain.test.mjs tests/growth.test.mjs","deploy":"node scripts/deploy.mjs"}}
+{"name":"otetsudai-pocket","private":true,"type":"module","scripts":{"preview":"python3 -m http.server 4173 --bind 127.0.0.1 --directory dist","test":"node --test tests/domain.test.mjs tests/growth.test.mjs tests/garden.test.mjs","deploy":"node scripts/deploy.mjs"}}
