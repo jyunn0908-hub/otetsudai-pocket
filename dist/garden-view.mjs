@@ -1,5 +1,5 @@
-import {creatureArt} from './growth-view.mjs?art=10';
-import {CELL,COLS,ROWS,FURNITURE,inventory,openCell} from './garden.mjs?art=10';
+import {creatureArt} from './growth-view.mjs?art=11';
+import {CELL,COLS,ROWS,FURNITURE,inventory,openCell} from './garden.mjs?art=11';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const drawings={
  bench:'<path fill="#65472f" d="M5 29h4v13H5zm32 0h4v13h-4z"/><path fill="#a76b3e" d="M3 9h42v19H3zM1 28h46v8H1z"/><path fill="#d9a66a" d="M6 12h36v5H6zm0 9h36v4H6zM4 29h40v4H4z"/>',
