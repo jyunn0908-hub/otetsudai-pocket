@@ -1,4 +1,5 @@
-import {grow} from './growth.mjs?art=9';
+import {findFurniture} from './garden.mjs?art=10';
+import {grow} from './growth.mjs?art=10';
 export function initialState(){return {chores:[{id:'dishes',title:'食器をかたづける',points:10,emoji:'🍽️'},{id:'laundry',title:'洗たくものをたたむ',points:20,emoji:'👕'},{id:'plants',title:'お花に水をあげる',points:10,emoji:'🌱'},{id:'clean',title:'おへやをそうじする',points:30,emoji:'🧹'}],rewards:[{id:'snack',title:'好きなおやつ',points:100,emoji:'🍩'},{id:'game',title:'ゲームを30分プラス',points:150,emoji:'🎮'},{id:'outing',title:'行きたい場所へおでかけ',points:500,emoji:'🎡'}],accounts:{},history:[]}}
 export function dayKey(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date())}
 // Only approved chores enter history. Group by the reported JST day, not approval time.
@@ -26,7 +27,7 @@ export function approve(state,req,id,now=Date.now(),seed=id){
  if(req.type==='chore'&&next.history.some(h=>h.uid===req.uid&&h.itemId===req.itemId&&h.day===req.day&&h.type==='chore'))throw new Error('このお手伝いは、その日の分を承認済みです。');
  const delta=req.type==='chore'?item.points:-item.points;
  if(account.points+delta<0)throw new Error('ポイントが足りません。');
- if(req.type==='chore')next.growth=grow(next.growth,id,now,seed);
+ if(req.type==='chore'){next.growth=grow(next.growth,id,now,seed);findFurniture(next,id);}
  account.points+=delta;next.history.unshift({id,requestId:id,uid:req.uid,name:account.name,title:item.title,emoji:item.emoji,delta,type:req.type,itemId:req.itemId,day:req.day,at:now,...(req.type==='chore'?{bonusEligible:true}:{})});
  if(req.type==='chore'){
   const today=new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date(now));
