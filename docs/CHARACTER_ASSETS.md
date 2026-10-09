@@ -31,8 +31,12 @@ Consistent square pixel grid, no fine detail. Result should resemble sprites tha
 
 ### 待機コマ
 
-undefined
+Edit this exact sprite atlas into animation frame B. Preserve canvas dimensions, transparent alpha, all twenty sprite identities, 5x4 grid, each sprite's EXACT scale, body center, silhouette, palette and position. Change ONLY visible eye squares into one-pixel horizontal closed-eye dashes, and alternate front feet by ONE coarse logical pixel for a walking step; dragon and phoenix wings lower by ONE pixel; egg upper half leans ONE pixel. Same very simple chunky low-resolution virtual-pet pixel art. No added detail or rendering, no gradients, glow, text, scenery or shadows. Real transparent background. Frame-to-frame registration is crucial: bodies must not shift, resize, or change species.
 
 ### 喜びコマ
 
-undefined
+Edit this exact sprite atlas into animation frame C. Preserve canvas dimensions, transparent alpha, all twenty sprite identities, 5x4 grid, each sprite's EXACT scale, body center, base silhouette, palette and position. Redraw ONLY eyes into two-pixel happy closed-eye arcs and mouth as a tiny smile, lift front arms/paws by TWO coarse logical pixels, rabbit ears splay slightly, turtle lifts one foot while clearly four-legged, dragon and phoenix wings raised TWO pixels, golem arms raised TWO pixels; egg tiny zigzag crack. Same very simple chunky low-resolution virtual-pet pixel art. No more detail, gradients, glow, text, scenery, decorative stars or shadows. Real transparent background. Body registration must remain identical, do not rescale or reposition the sprites.
+
+## ドット幅と動きの統一（2026-10-09）
+
+1ドットの表示幅を96px表示で2px、144pxで3px、192pxで4pxと定義。ジャンプはその整数倍で移動し、待機時は全体を斜めに動かさず表情のコマのみ切り替える。通常・待機・喜びの色をキャラクターごとに共通の最大8色へ揃え、微妙な色の揺れを減らす。半透明の輪郭は使わない。`sprite-grid.mjs` が共通パレット化を担当。生成画像そのものと保存済みの育成情報は変更しない。
