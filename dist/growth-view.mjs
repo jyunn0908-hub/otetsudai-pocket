@@ -1,6 +1,6 @@
-import {CREATURES,STAGE_NAMES,MILESTONES,growthDay} from './growth.mjs?art=11';
+import {CREATURES,STAGE_NAMES,MILESTONES,growthDay} from './growth.mjs?art=12';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-import './pixel-sprites.mjs?art=11';
+import './pixel-sprites.mjs?art=12';
 export function creatureArt(id,stage=0){const c=CREATURES[id]||CREATURES.egg;
  return `<pixel-pet class="creature pixel-pet" sprite="${c.sprite??0}" role="img" aria-label="${esc(c.name)}"></pixel-pet>`;
 }

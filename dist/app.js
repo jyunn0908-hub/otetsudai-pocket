@@ -1,9 +1,9 @@
-import {savePlacement,placeItem} from './garden.mjs?art=11';
-import {gardenContent,animateGarden} from './garden-view.mjs?art=11';
-import {advance,archive,nextEgg,SPECIES} from './growth.mjs?art=11';
-import {growthContent,growthNotice} from './growth-view.mjs?art=11';
+import {savePlacement,placeItem} from './garden.mjs?art=12';
+import {gardenContent,animateGarden} from './garden-view.mjs?art=12';
+import {advance,archive,nextEgg,SPECIES} from './growth.mjs?art=12';
+import {growthContent,growthNotice} from './growth-view.mjs?art=12';
 import {firebaseConfig} from './config.js';
-import {initialState,dayKey,approve,validateItem,choreStats,choreStreaks,CHORE_BONUSES} from './domain.mjs?art=11';
+import {initialState,dayKey,approve,validateItem,choreStats,choreStreaks,CHORE_BONUSES} from './domain.mjs?art=12';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let demo=!firebaseConfig,role='child',tab='chores',state=initialState(),requests=[],joins=[],uid='demo-child',family='',user=null,api=null,stops=[],busy=false,ready=false,member=false,joinStatus='',loadError='';
 let inviteFamily=new URLSearchParams(location.hash.slice(1)).get('family')||localStorage.getItem('pocket-family')||'';
