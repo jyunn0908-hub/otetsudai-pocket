@@ -16,7 +16,7 @@
 
 ## キャラクター育成機能
 
-- 育成機能を実装・変更する場合は、最初に [docs/CHARACTER_GROWTH.md](docs/CHARACTER_GROWTH.md) を読み、約21日サイクルの仕様に従うこと。
+- 育成機能を実装・変更する場合は、最初に [docs/CHARACTER_GROWTH.md](docs/CHARACTER_GROWTH.md) を読み、最新の日付条件（4・7・11日目）とポイント条件の仕様に従うこと。
 - 既存の承認制・ご褒美交換用ポイント・アクセス制御を維持し、仕様書に記載した未確定事項は実装計画で扱いを明示すること。
 - キャラクター素材や表示を実装・変更する場合も育成仕様書を読み、48×48px・整数倍拡大・補間なし、10系統の初期候補、かっこいい3系統と四足のみずかめの方針を守ること。仮素材や仮の進化ツリーを確定仕様として扱わないこと。
 - キャラクターのデザインやスプライトを変更する場合は、[docs/CHARACTER_GROWTH.md](docs/CHARACTER_GROWTH.md) と [docs/assets/character-concept.png](docs/assets/character-concept.png) の両方を確認すること。コンセプトアートを完成済みのゲーム用48×48スプライトとして扱わないこと。
