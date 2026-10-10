@@ -1,4 +1,4 @@
-import {unifyPalette} from './sprite-grid.mjs?art=14';
+import {unifyPalette,uniformOutline} from './sprite-grid.mjs?art=15';
 // The displayed image is always a native 48×48 raster, never a high-resolution crop.
 const SIZE=48,COLS=5,ROWS=4;
 const FRAMES=['normal','idle','joy'];
@@ -25,7 +25,7 @@ class PixelPet extends HTMLElement{
   if(!pixels.has(index))pixels.set(index,Promise.all(sheets).then(images=>{
    const canvases=images.map(image=>raster(image,index));
    const frames=unifyPalette(canvases.map(c=>c.getContext('2d').getImageData(0,0,SIZE,SIZE).data));
-   canvases.forEach((c,i)=>c.getContext('2d').putImageData(new ImageData(frames[i],SIZE,SIZE),0,0));return canvases;
+   canvases.forEach((c,i)=>c.getContext('2d').putImageData(new ImageData(uniformOutline(frames[i],SIZE,SIZE),SIZE,SIZE),0,0));return canvases;
   }));
   pixels.get(index).then(frames=>{
    if(!this.isConnected)return;
