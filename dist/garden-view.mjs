@@ -1,6 +1,6 @@
-import {ground,groundStyle,gardenScenery} from './garden-space.mjs?art=13';
-import {creatureArt} from './growth-view.mjs?art=13';
-import {COLS,ROWS,FURNITURE,inventory,openCell} from './garden.mjs?art=13';
+import {ground,groundStyle,gardenScenery} from './garden-space.mjs?art=14';
+import {creatureArt} from './growth-view.mjs?art=14';
+import {COLS,ROWS,FURNITURE,inventory,openCell} from './garden.mjs?art=14';
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const drawings={
  bench:'<path fill="#66472f" d="M7 27h4v16H7zm29-4h4v16h-4z"/><path fill="#976137" d="M4 10l32-6 8 4v18l-32 6-8-4z"/><path fill="#d4a36a" d="M7 11l29-5 5 3-29 6zm0 8 29-5 5 3-29 6z"/><path fill="#bb854f" d="M2 28l32-6 12 6-32 8z"/><path fill="#e5b77c" d="M5 28l29-5 8 4-29 6z"/><path fill="#755033" d="M14 36l32-8v5l-32 8z"/>',

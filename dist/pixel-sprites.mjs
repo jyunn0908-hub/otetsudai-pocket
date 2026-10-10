@@ -1,4 +1,4 @@
-import {unifyPalette} from './sprite-grid.mjs?art=13';
+import {unifyPalette} from './sprite-grid.mjs?art=14';
 // The displayed image is always a native 48×48 raster, never a high-resolution crop.
 const SIZE=48,COLS=5,ROWS=4;
 const FRAMES=['normal','idle','joy'];

@@ -1,6 +1,6 @@
 // Provisional tree, deliberately separate from progression and presentation.
 export const GROWTH_POINTS=10;
-export const MILESTONES=[{stage:2,day:7,points:80},{stage:3,day:13,points:150},{stage:4,day:21,points:230}];
+export const MILESTONES=[{stage:2,day:4,points:80},{stage:3,day:7,points:150},{stage:4,day:11,points:230}];
 export const CREATURES={egg:{name:'ふしぎなタマゴ',color:'#f1d891',kind:'egg'},baby:{name:'ポケットのこ',color:'#91cbd5',kind:'baby'},sky:{name:'そらのこ',color:'#91cbd5',kind:'wing',next:['cloud','moon']},leaf:{name:'もりのこ',color:'#aed798',kind:'leaf',next:['flower','spring']},cloud:{name:'くものともだち',color:'#91cbd5',kind:'wing',next:['mokumo','kazemo']},moon:{name:'つきのともだち',color:'#b6a3e0',kind:'fox',next:['yorune','hoshipuru']},flower:{name:'はなのともだち',color:'#f3b1ab',kind:'leaf',next:['hanapyon','pokaron']},spring:{name:'みずのともだち',color:'#8ac7de',kind:'bear',next:['shizukuma','mizune']},mokumo:{name:'モクモ',color:'#91cbd5',kind:'wing'},kazemo:{name:'カゼモ',color:'#a6d5b0',kind:'wing'},yorune:{name:'ヨルネ',color:'#8b8ac5',kind:'fox'},hoshipuru:{name:'ホシプル',color:'#b6a3e0',kind:'star'},hanapyon:{name:'ハナピョン',color:'#eddaa5',kind:'leaf'},pokaron:{name:'ポカロン',color:'#ed9b80',kind:'flame'},shizukuma:{name:'シズクマ',color:'#8ac7de',kind:'bear'},mizune:{name:'ミズネ',color:'#94d8c5',kind:'fox'}};
 // Existing IDs remain readable so saved companions and histories survive the art update.
 export const SPECIES=[
