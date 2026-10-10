@@ -25,3 +25,20 @@ test('承認の二重実行やごほうび交換は家具を増やさず、60点
  const exchanged=approve(s,{...req,type:'reward',itemId:'snack'},'reward');assert.deepEqual(exchanged.gardenInventory,s.gardenInventory);assert.equal(exchanged.gardenChores,3);
  s.gardenInventory=Object.fromEntries(Array.from({length:60},(_,i)=>['find-'+i,'pot']));for(let i=0;i<6;i++)findFurniture(s,''+i);assert.equal(Object.keys(s.gardenInventory).length,60);
 });
+
+import {ground,depth,groundStyle,WORLD_WIDTH,WORLD_HEIGHT} from '../dist/garden-space.mjs';
+import {openCell} from '../dist/garden.mjs';
+test('保存済み座標を変えず整数ピクセルの斜め庭へ投影し、全配置が庭に収まる',()=>{
+ const points=new Set();
+ for(let y=1;y<=10;y++)for(let x=1;x<=18;x++)if(openCell(x,y)){
+  const p=ground(x,y);assert.ok(Number.isInteger(p.x)&&Number.isInteger(p.y));
+  assert.ok(p.x-48>=0&&p.x+48<=WORLD_WIDTH&&p.y-96>=0&&p.y<=WORLD_HEIGHT);
+  points.add(`${p.x},${p.y}`);assert.match(groundStyle(x,y),/z-index:\d+$/);
+ }
+ assert.equal(points.size,168);
+ assert.ok(ground(2,3).x>ground(2,2).x);
+});
+test('家具とキャラクター共通の足元順で、隣の奥行き列が手前に描かれる',()=>{
+ for(let y=1;y<10;y++)assert.ok(depth(1,y+1)>depth(18,y));
+ assert.ok(depth(6,4)>depth(5,4));
+});
