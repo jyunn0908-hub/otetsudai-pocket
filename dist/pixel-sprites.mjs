@@ -1,4 +1,4 @@
-import {unifyPalette,uniformOutline} from './sprite-grid.mjs?art=15';
+import {unifyPalette,uniformOutline} from './sprite-grid.mjs?art=16';
 // The displayed image is always a native 48×48 raster, never a high-resolution crop.
 const SIZE=48,COLS=5,ROWS=4;
 const FRAMES=['normal','idle','joy'];
@@ -6,6 +6,13 @@ const sheets=FRAMES.map(kind=>new Promise((resolve,reject)=>{
  const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('キャラクター画像を読みこめませんでした'));image.src=`./pets-pixel-${kind}.png`;
 }));
 const pixels=new Map();
+// Finished native strips bypass resampling, palette learning and outline repair.
+function nativeFrames(url){return new Promise((resolve,reject)=>{
+ const image=new Image();image.onerror=()=>reject(Error('完成スプライトを読みこめませんでした'));
+ image.onload=()=>{if(image.width!==SIZE*FRAMES.length||image.height!==SIZE){reject(Error('完成スプライトのサイズが違います'));return}
+ resolve(FRAMES.map((_,i)=>{const c=document.createElement('canvas');c.width=SIZE;c.height=SIZE;const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(image,i*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);return c}));};image.src=url;
+})}
+
 function raster(sheet,index){
  const canvas=document.createElement('canvas');canvas.width=SIZE;canvas.height=SIZE;
  const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
@@ -22,6 +29,7 @@ class PixelPet extends HTMLElement{
  connectedCallback(){
   if(this.childElementCount)return;
   const index=Math.max(0,Math.min(19,Number(this.getAttribute('sprite'))||0));
+  if(!pixels.has(index)&&index===2)pixels.set(index,nativeFrames('./wakaba-native.png'));
   if(!pixels.has(index))pixels.set(index,Promise.all(sheets).then(images=>{
    const canvases=images.map(image=>raster(image,index));
    const frames=unifyPalette(canvases.map(c=>c.getContext('2d').getImageData(0,0,SIZE,SIZE).data));
