@@ -31,3 +31,25 @@ test('outline handles empty frames, thin limbs and dimensions without adding col
  const f=new Uint8ClampedArray([20,10,30,255,20,10,30,255]);assert.deepEqual(uniformOutline(f,2,1),f);
  assert.throws(()=>uniformOutline(f,3,3));
 });
+
+import fs from 'node:fs';
+import {inflateSync} from 'node:zlib';
+function nativePNG(){
+ const file=fs.readFileSync(new URL('../dist/wakaba-native.png',import.meta.url)),parts=[];
+ assert.equal(file.readUInt32BE(16),144);assert.equal(file.readUInt32BE(20),48);
+ assert.equal(file[24],8);assert.equal(file[25],6);
+ for(let p=8;p<file.length;){const n=file.readUInt32BE(p),kind=file.toString('ascii',p+4,p+8);if(kind==='IDAT')parts.push(file.subarray(p+8,p+8+n));p+=n+12;}
+ const raw=inflateSync(Buffer.concat(parts)),out=Buffer.alloc(144*48*4),stride=144*4;
+ const paeth=(a,b,c)=>{const p=a+b-c,da=Math.abs(p-a),db=Math.abs(p-b),dc=Math.abs(p-c);return da<=db&&da<=dc?a:db<=dc?b:c};
+ for(let y=0;y<48;y++){const filter=raw[y*(stride+1)];for(let x=0;x<stride;x++){const i=y*stride+x,a=x>=4?out[i-4]:0,b=y?out[i-stride]:0,c=x>=4&&y?out[i-stride-4]:0;out[i]=(raw[y*(stride+1)+1+x]+[0,a,b,Math.floor((a+b)/2),paeth(a,b,c)][filter])&255}}
+ return (frame,x,y)=>out.subarray((y*144+frame*48+x)*4,(y*144+frame*48+x)*4+4);
+}
+test('native wakaba is three exact 48px frames with fixed palette, leaves and feet',()=>{
+ const pixel=nativePNG(),colors=new Set();
+ for(let f=0;f<3;f++)for(let y=0;y<48;y++)for(let x=0;x<48;x++){
+  const p=pixel(f,x,y);assert.ok(p[3]===0||p[3]===255);if(p[3])colors.add(p.toString('hex'));
+  if(y<27||y>=36)assert.deepEqual(p,pixel(0,x,y));
+  if(f===1&&!(y>=28&&y<=30&&((x>=17&&x<=20)||(x>=27&&x<=30))))assert.deepEqual(p,pixel(0,x,y));
+ }
+ assert.ok(colors.size<=5);
+});
