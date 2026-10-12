@@ -1,40 +1,21 @@
-import {unifyPalette,uniformOutline} from './sprite-grid.mjs?art=16';
-// The displayed image is always a native 48×48 raster, never a high-resolution crop.
-const SIZE=48,COLS=5,ROWS=4;
-const FRAMES=['normal','idle','joy'];
-const sheets=FRAMES.map(kind=>new Promise((resolve,reject)=>{
- const image=new Image();image.onload=()=>resolve(image);image.onerror=()=>reject(Error('キャラクター画像を読みこめませんでした'));image.src=`./pets-pixel-${kind}.png`;
-}));
-const pixels=new Map();
-// Finished native strips bypass resampling, palette learning and outline repair.
-function nativeFrames(url){return new Promise((resolve,reject)=>{
+// Every shipped frame is an authored 48×48 raster. The runtime only copies
+// pixels from the finished atlas; it never retouches or rescales the artwork.
+const SIZE=48,COUNT=20,FRAMES=['normal','idle','joy'];
+const sheet=new Promise((resolve,reject)=>{
  const image=new Image();image.onerror=()=>reject(Error('完成スプライトを読みこめませんでした'));
- image.onload=()=>{if(image.width!==SIZE*FRAMES.length||image.height!==SIZE){reject(Error('完成スプライトのサイズが違います'));return}
- resolve(FRAMES.map((_,i)=>{const c=document.createElement('canvas');c.width=SIZE;c.height=SIZE;const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;ctx.drawImage(image,i*SIZE,0,SIZE,SIZE,0,0,SIZE,SIZE);return c}));};image.src=url;
-})}
-
-function raster(sheet,index){
- const canvas=document.createElement('canvas');canvas.width=SIZE;canvas.height=SIZE;
- const ctx=canvas.getContext('2d');ctx.imageSmoothingEnabled=false;
- const x=Math.round(index%COLS*sheet.width/COLS),y=Math.round(Math.floor(index/COLS)*sheet.height/ROWS);
- const right=Math.round((index%COLS+1)*sheet.width/COLS),bottom=Math.round((Math.floor(index/COLS)+1)*sheet.height/ROWS);
- ctx.drawImage(sheet,x,y,right-x,bottom-y,0,0,SIZE,SIZE);
- // Half-transparent edge fringes cannot become fractional-looking screen pixels.
- const data=ctx.getImageData(0,0,SIZE,SIZE);
- for(let i=3;i<data.data.length;i+=4)data.data[i]=data.data[i]>=128?255:0;
- ctx.putImageData(data,0,0);
- return canvas;
-}
+ image.onload=()=>{if(image.width!==SIZE*FRAMES.length||image.height!==SIZE*COUNT){reject(Error('完成スプライトのサイズが違います'));return}resolve(image)};
+ image.src='./pets-native.png';
+});
+const pixels=new Map();
 class PixelPet extends HTMLElement{
  connectedCallback(){
   if(this.childElementCount)return;
-  const index=Math.max(0,Math.min(19,Number(this.getAttribute('sprite'))||0));
-  if(!pixels.has(index)&&index===2)pixels.set(index,nativeFrames('./wakaba-native.png'));
-  if(!pixels.has(index))pixels.set(index,Promise.all(sheets).then(images=>{
-   const canvases=images.map(image=>raster(image,index));
-   const frames=unifyPalette(canvases.map(c=>c.getContext('2d').getImageData(0,0,SIZE,SIZE).data));
-   canvases.forEach((c,i)=>c.getContext('2d').putImageData(new ImageData(uniformOutline(frames[i],SIZE,SIZE),SIZE,SIZE),0,0));return canvases;
-  }));
+  const index=Math.max(0,Math.min(COUNT-1,Math.floor(Number(this.getAttribute('sprite'))||0)));
+  if(!pixels.has(index))pixels.set(index,sheet.then(image=>FRAMES.map((_,i)=>{
+   const c=document.createElement('canvas');c.width=SIZE;c.height=SIZE;
+   const ctx=c.getContext('2d');ctx.imageSmoothingEnabled=false;
+   ctx.drawImage(image,i*SIZE,index*SIZE,SIZE,SIZE,0,0,SIZE,SIZE);return c;
+  })));
   pixels.get(index).then(frames=>{
    if(!this.isConnected)return;
    frames.forEach((source,i)=>{const canvas=document.createElement('canvas');canvas.width=SIZE;canvas.height=SIZE;canvas.className='pet-frame pet-frame-'+FRAMES[i];canvas.setAttribute('aria-hidden','true');canvas.getContext('2d').drawImage(source,0,0);this.append(canvas)});
