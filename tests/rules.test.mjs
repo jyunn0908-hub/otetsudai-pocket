@@ -99,6 +99,9 @@ try{
  await assertFails(setDoc(careRef(outsider),careBase));await assertFails(setDoc(careRef(unauth),careBase));
  await assertFails(setDoc(careRef(kid),{...careBase,balance:100}));
  await assertFails(setDoc(careRef(kid),{...careBase,day:day+1}));
+ await assertSucceeds(saveCare({...firestore,db:kid},'parent','start',{id:'first-game-with-egg'}));
+ assert.equal((await getDoc(careRef(kid))).data().used,1);
+ await env.withSecurityRulesDisabled(async ctx=>firestore.deleteDoc(careRef(ctx.firestore())));
  await assertSucceeds(setDoc(careRef(kid),careBase));
  await assertFails(updateDoc(careRef(kid),{claimed:true,score:10,balance:15}));
  await assertFails(updateDoc(careRef(kid),{balance:999}));
