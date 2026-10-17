@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "preview": "python3 -m http.server 4173 --bind 127.0.0.1 --directory dist",
-    "test": "node --test tests/domain.test.mjs tests/growth.test.mjs tests/garden.test.mjs tests/sprite-grid.test.mjs tests/care.test.mjs",
+    "test": "node --test tests/domain.test.mjs tests/growth.test.mjs tests/garden.test.mjs tests/sprite-grid.test.mjs tests/care.test.mjs tests/mini-games.test.mjs",
     "deploy": "node scripts/deploy.mjs"
   }
 }
