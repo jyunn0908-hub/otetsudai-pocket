@@ -1,4 +1,5 @@
 import * as firestore from 'firebase/firestore';
+import {saveCare} from '../dist/care.mjs';
 import {savePlacement} from '../dist/garden.mjs';
 import {advance,archive,nextEgg,grow} from '../dist/growth.mjs';
 import {readFile} from 'node:fs/promises';
@@ -90,8 +91,60 @@ try{
  assert.equal((await getDoc(garden(parent,'find-59'))).data().x,12);
  await assertSucceeds(savePlacement(firestore,kid,'parent','starter-bench',null));
  assert.equal((await getDoc(garden(parent))).exists(),false);
+
+ // Care is family-scoped, distinct from rewards; use server time for limits.
+ const careRef=db=>doc(db,'families','parent','care','state');
+ const day=Math.floor((Date.now()+32400000)/86400000);
+ const careBase={day,used:1,balance:0,session:'round1',startedAt:firestore.serverTimestamp(),claimed:false,score:0,meals:{berry:0,fish:0,soup:0},lastFood:'',feedId:''};
+ await assertFails(setDoc(careRef(outsider),careBase));await assertFails(setDoc(careRef(unauth),careBase));
+ await assertFails(setDoc(careRef(kid),{...careBase,balance:100}));
+ await assertFails(setDoc(careRef(kid),{...careBase,day:day+1}));
+ await assertSucceeds(setDoc(careRef(kid),careBase));
+ await assertFails(updateDoc(careRef(kid),{claimed:true,score:10,balance:15}));
+ await assertFails(updateDoc(careRef(kid),{balance:999}));
+ await assertFails(deleteDoc(careRef(kid)));
+ await assertFails(getDoc(careRef(outsider)));
+ await assertSucceeds(getDoc(careRef(parent)));await assertSucceeds(getDoc(careRef(newKid)));
+ async function seedCare(extra={}){await env.withSecurityRulesDisabled(async ctx=>setDoc(careRef(ctx.firestore()),{...careBase,startedAt:firestore.Timestamp.fromMillis(Date.now()-31000),...extra}))}
+ await seedCare();
+ for(const score of [-1,31,1.5])await assertFails(updateDoc(careRef(kid),{claimed:true,score,balance:5+score}));
+ async function claim(db){return runTransaction(db,async tx=>{const ref=careRef(db),snap=await tx.get(ref);if(snap.data().claimed)throw Error('already claimed');tx.update(ref,{claimed:true,score:20,balance:snap.data().balance+25})})}
+ const claims=await Promise.allSettled([claim(kid),claim(newKid)]);assert.equal(claims.filter(x=>x.status==='fulfilled').length,1);
+ assert.equal((await getDoc(careRef(kid))).data().balance,25);
+ await assertFails(updateDoc(careRef(kid),{balance:50}));
+ await assertFails(updateDoc(careRef(kid),{claimed:false}));
+ const meal={balance:15,meals:{berry:1,fish:0,soup:0},lastFood:'berry',feedId:'meal1'};
+ await assertSucceeds(updateDoc(careRef(kid),meal));
+ await assertFails(updateDoc(careRef(kid),{...meal,balance:5,meals:{berry:2,fish:0,soup:0}}));
+ await assertFails(updateDoc(careRef(kid),{balance:-5,meals:{berry:1,fish:0,soup:1},lastFood:'soup',feedId:'meal2'}));
+ await assertFails(updateDoc(careRef(kid),{balance:15,meals:{berry:2,fish:0,soup:0},lastFood:'berry',feedId:'meal2'}));
+ await seedCare({used:4,claimed:true,balance:25});
+ async function startGame(db,id){return runTransaction(db,async tx=>{const ref=careRef(db),snap=await tx.get(ref);tx.update(ref,{used:snap.data().used+1,session:id,startedAt:firestore.serverTimestamp(),claimed:false,score:0})})}
+ const starts=await Promise.allSettled([startGame(kid,'round5a'),startGame(newKid,'round5b')]);assert.equal(starts.filter(x=>x.status==='fulfilled').length,1);
+ assert.equal((await getDoc(careRef(kid))).data().used,5);
+ await seedCare({used:5,claimed:true,balance:25});
+ await assertFails(startGame(kid,'round6'));
+ await assertFails(updateDoc(careRef(kid),{used:1,day:day+1,session:'fake-day',startedAt:firestore.serverTimestamp(),claimed:false,score:0}));
+ await seedCare({day:day-1,used:5,claimed:true,balance:25});
+ await assertSucceeds(updateDoc(careRef(newKid),{day,used:1,session:'newday',startedAt:firestore.serverTimestamp(),claimed:false,score:0}));
+ assert.equal((await getDoc(careRef(newKid))).data().balance,25);
+
+ await seedCare({day:day-1,used:5,claimed:true,balance:25});
+ const careApi={...firestore,db:kid};
+ await assertSucceeds(saveCare(careApi,'parent','start',{id:'real-api'}));
+ await assertSucceeds(saveCare(careApi,'parent','start',{id:'real-api'}));
+ assert.equal((await getDoc(careRef(kid))).data().used,1);
+ await seedCare({session:'real-api',balance:25});
+ await assertSucceeds(saveCare(careApi,'parent','finish',{id:'real-api',score:10}));
+ await assertSucceeds(saveCare(careApi,'parent','finish',{id:'real-api',score:10}));
+ assert.equal((await getDoc(careRef(kid))).data().balance,40);
+ await assertSucceeds(saveCare(careApi,'parent','feed',{id:'real-meal',food:'fish'}));
+ await assertSucceeds(saveCare(careApi,'parent','feed',{id:'real-meal',food:'fish'}));
+ assert.equal((await getDoc(careRef(kid))).data().balance,25);
+ console.log('PASS: お世話5回制限・サーバー日付・同時開始/結果加算・ご飯残高・二重送信・家族外拒否・端末共有');
  await assertSucceeds(deleteDoc(doc(parent,'families','parent','members','kid')));
  await assertFails(getDoc(garden(kid,'find-3')));await assertFails(setDoc(garden(kid),placement));
+ await assertFails(getDoc(careRef(kid)));
  console.log('PASS: 庭の家族共有・子供の配置と片付け・持ち物偽造/家族外/無効座標/権限剥奪の拒否');
  console.log('PASS: 成長の二重付与防止、交換独立、子供の成長・進化・図鑑改ざん禁止、家族外アクセス禁止、同時進化の図鑑一件、次サイクル競合、保存後復帰・新端末での読取');
  console.log('PASS: 家族外の読取禁止、未承認参加、親なりすまし禁止、子供の残高変更禁止、申請と再申請、同時二重承認、同時交換の残高保護');
