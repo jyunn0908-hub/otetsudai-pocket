@@ -9,6 +9,58 @@ service cloud.firestore {
       allow list: if false;
       allow create, update: if parent(family);
       allow delete: if false;
+      match /care/{careId} {
+        function today() { return int((request.time.toMillis() + 32400000) / 86400000); }
+        function valid() {
+          let d=request.resource.data;
+          return d.keys().hasAll(['day','used','balance','session','startedAt','claimed','score','meals','lastFood','feedId'])
+            && d.keys().hasOnly(['day','used','balance','session','startedAt','claimed','score','meals','lastFood','feedId'])
+            && d.day is int && d.used is int && d.used >= 1 && d.used <= 5
+            && d.balance is int && d.balance >= 0
+            && d.session is string && d.session.size() > 0 && d.session.size() <= 64
+            && d.startedAt is timestamp && d.claimed is bool
+            && d.score is int && d.score >= 0 && d.score <= 30
+            && d.meals.keys().hasAll(['berry','fish','soup']) && d.meals.keys().hasOnly(['berry','fish','soup'])
+            && d.meals.berry is int && d.meals.berry >= 0
+            && d.meals.fish is int && d.meals.fish >= 0
+            && d.meals.soup is int && d.meals.soup >= 0
+            && d.lastFood in ['', 'berry','fish','soup']
+            && d.feedId is string && d.feedId.size() <= 64;
+        }
+        function start() {
+          let d=request.resource.data;let old=resource.data;
+          return d.diff(old).affectedKeys().hasOnly(['day','used','session','startedAt','claimed','score'])
+            && d.day == today() && d.startedAt == request.time && !d.claimed && d.score == 0
+            && d.session != old.session
+            && (old.claimed || request.time >= old.startedAt + duration.value(30,'s'))
+            && d.used == (old.day == today() ? old.used + 1 : 1);
+        }
+        function finish() {
+          let d=request.resource.data;let old=resource.data;
+          return d.diff(old).affectedKeys().hasOnly(['claimed','score','balance'])
+            && !old.claimed && d.claimed
+            && request.time >= old.startedAt + duration.value(30,'s')
+            && d.balance == old.balance + 5 + d.score;
+        }
+        function feed() {
+          let d=request.resource.data;let old=resource.data;
+          let cost={'berry':10,'fish':15,'soup':20};
+          return d.diff(old).affectedKeys().hasOnly(['balance','meals','lastFood','feedId'])
+            && d.lastFood in cost && d.feedId.size() > 0 && d.feedId != old.feedId
+            && d.balance == old.balance - cost[d.lastFood]
+            && d.meals.diff(old.meals).affectedKeys().hasOnly([d.lastFood])
+            && d.meals[d.lastFood] == old.meals[d.lastFood]+1;
+        }
+        allow get: if careId == 'state' && (parent(family) || child(family));
+        allow create: if careId == 'state' && child(family) && valid()
+          && request.resource.data.day == today() && request.resource.data.used == 1
+          && request.resource.data.startedAt == request.time && !request.resource.data.claimed
+          && request.resource.data.score == 0 && request.resource.data.balance == 0
+          && request.resource.data.meals == {'berry':0,'fish':0,'soup':0}
+          && request.resource.data.lastFood == '' && request.resource.data.feedId == '';
+        allow update: if careId == 'state' && child(family) && valid() && (start() || finish() || feed());
+        allow delete: if false;
+      }
       match /garden/{itemId} {
         function ownsFurniture() {
           let starters = {'starter-bench':'bench','starter-pot':'pot','starter-cushion':'cushion','starter-table':'table'};

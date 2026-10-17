@@ -50,3 +50,9 @@ READMEの手順で `dist/config.js` を作成すると、ローカルで試せ�
 ## ピクセルキャラクター（2026-10-07）
 
 切り抜き風の絵から、シンプルなドット絵の20姿・3コマへ再制作。`dist/pets-pixel-{normal,idle,joy}.png` と `dist/pixel-sprites.mjs` を使い、48×48 Canvasで描画して整数倍拡大する。旧ID・育成記録は維持。制作プロンプトと素材説明は `docs/CHARACTER_ASSETS.md`。
+
+## お世話ミニゲーム（2026-10-17）
+
+`docs/CARE_GAME.md`を参照。`care.mjs`は1日5回・お世話残高・ご飯交換、`catch-game.mjs`は30秒ゲームを担当。家族共有の`care/state`に保存し、FirestoreルールでserverTimestampと日付・回数・残高遷移を検証。親の承認で使う家族ドキュメントの残高とは独立。ご飯の進化補正は未実装。
+
+キャラの現在の完成素材は`dist/pets-native.png`。古い原画を描画時に減色する方式は廃止し、20種類×3コマをそのまま等倍切り出しして整数倍表示する。
