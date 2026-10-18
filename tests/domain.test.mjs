@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import {approve,initialState,validateItem,choreStats,choreStreaks} from '../dist/domain.mjs';
+import {approve,initialState,validateItem,choreStats,choreStreaks,dayKey,pendingChores,pendingRequest} from '../dist/domain.mjs';
 function state(points=0){const s=initialState();s.accounts.kid={name:'テスト',points};return s}
 const chore={uid:'kid',type:'chore',itemId:'clean',day:'2026-10-03'};
 const at=day=>Date.parse(`2026-10-${String(day).padStart(2,'0')}T12:00:00+09:00`);
@@ -64,3 +64,21 @@ test('交換は承認時に減算',()=>{const s=approve(state(100),{uid:'kid',ty
 test('不足する交換と連続交換を拒否',()=>{const r={uid:'kid',type:'reward',itemId:'snack',day:'2026-10-03'};assert.throws(()=>approve(state(99),r,'b'),/足りません/);const s=approve(state(150),r,'b');assert.throws(()=>approve(s,r,'c'),/足りません/);assert.equal(s.accounts.kid.points,50)});
 test('未承認の子供・削除済み項目を拒否',()=>{assert.throws(()=>approve(initialState(),chore,'a'),/登録/);assert.throws(()=>approve(state(),{...chore,itemId:'missing'},'a'),/削除/)});
 test('入力範囲・小数・空文字を検証',()=>{for(const p of [0,-1,1.2,10001,NaN])assert.throws(()=>validateItem('お手伝い',p));assert.throws(()=>validateItem('',10));assert.throws(()=>validateItem('a'.repeat(41),10));assert.doesNotThrow(()=>validateItem('お手伝い',10))});
+
+test('日本時間の翌日にも確認待ちは残り、今日の同じお手伝いを送れる',()=>{
+ const before=Date.parse('2026-10-18T23:59:59+09:00'),after=before+1000;
+ const old={...chore,day:dayKey(before),status:'pending',id:'old',at:before};
+ const requests=[old,{...old,uid:'other'},{...old,status:'approved'},{...old,status:'rejected'},{...old,type:'reward'}];
+ assert.equal(dayKey(after),'2026-10-19');
+ assert.equal(pendingRequest(requests,'kid','clean','chore',dayKey(before)),old);
+ assert.equal(pendingRequest(requests,'kid','clean','chore',dayKey(after)),undefined);
+ assert.deepEqual(pendingChores(requests,'kid'),[old]);
+ const today={...old,id:'today',day:dayKey(after),at:after};requests.push(today);
+ assert.deepEqual(pendingChores(requests,'kid'),[old,today]);
+ assert.equal(pendingRequest(requests,'kid','clean','chore',dayKey(after)),today);
+ let s=approve(state(),today,'today',after);s=approve(s,old,'old',after);
+ assert.equal(s.accounts.kid.points,60);assert.equal(s.growth.count,2);
+ assert.deepEqual(s.history.filter(h=>h.type==='chore').map(h=>h.day),['2026-10-18','2026-10-19']);
+ assert.throws(()=>approve(s,old,'old',after),/処理/);
+ old.status='approved';assert.deepEqual(pendingChores(requests,'kid'),[today]);
+});
