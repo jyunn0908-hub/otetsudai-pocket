@@ -1,7 +1,7 @@
-import {findFurniture} from './garden.mjs?art=20';
-import {grow} from './growth.mjs?art=20';
+import {findFurniture} from './garden.mjs?art=21';
+import {grow} from './growth.mjs?art=21';
 export function initialState(){return {chores:[{id:'dishes',title:'食器をかたづける',points:10,emoji:'🍽️'},{id:'laundry',title:'洗たくものをたたむ',points:20,emoji:'👕'},{id:'plants',title:'お花に水をあげる',points:10,emoji:'🌱'},{id:'clean',title:'おへやをそうじする',points:30,emoji:'🧹'}],rewards:[{id:'snack',title:'好きなおやつ',points:100,emoji:'🍩'},{id:'game',title:'ゲームを30分プラス',points:150,emoji:'🎮'},{id:'outing',title:'行きたい場所へおでかけ',points:500,emoji:'🎡'}],accounts:{},history:[]}}
-export function dayKey(){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date())}
+export function dayKey(now=Date.now()){return new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Tokyo'}).format(new Date(now))}
 // Only approved chores enter history. Group by the reported JST day, not approval time.
 export function choreStats(history,uid,today=dayKey()){
  const chores=history.filter(h=>h.uid===uid&&h.type==='chore');
@@ -44,3 +44,11 @@ export function approve(state,req,id,now=Date.now(),seed=id){
  return next;
 }
 export function validateItem(title,points){if(typeof title!=='string'||!title.trim()||title.trim().length>40)throw new Error('名前は1〜40文字で入力してください。');if(!Number.isInteger(points)||points<1||points>10000)throw new Error('ポイントは1〜10,000の整数で入力してください。');}
+
+// Pending reports have no expiry; only today's report blocks today's button.
+export function pendingChores(requests,uid){
+ return requests.filter(r=>r.uid===uid&&r.type==='chore'&&r.status==='pending').sort((a,b)=>a.day.localeCompare(b.day)||a.at-b.at);
+}
+export function pendingRequest(requests,uid,itemId,type,today=dayKey()){
+ return requests.find(r=>r.uid===uid&&r.itemId===itemId&&r.type===type&&r.status==='pending'&&(type==='reward'||r.day===today));
+}

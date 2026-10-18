@@ -1,5 +1,5 @@
-import {CREATURES} from './growth.mjs?art=20';
-import {MAX_FRUIT,CATCH_MS} from './care.mjs?art=20';
+import {CREATURES} from './growth.mjs?art=21';
+import {MAX_FRUIT,CATCH_MS} from './care.mjs?art=21';
 // A 288px logical field at integer scale. Existing native character pixels
 // are copied 1:1, and movement is rounded to whole pixels.
 export function createRound(){return {x:144,score:0,caught:0,bombs:0,feedback:null,spawned:0,fruits:[]}}

@@ -1,5 +1,5 @@
-import {CREATURES,SPECIES} from './growth.mjs?art=20';
-import {creatureArt} from './growth-view.mjs?art=20';
+import {CREATURES,SPECIES} from './growth.mjs?art=21';
+import {creatureArt} from './growth-view.mjs?art=21';
 const gallery=document.querySelector('#gallery');
 const ids=['egg','baby','sprout','wisp','forestling','waterling','shadowling','skyling','fireling','cloudling',...SPECIES.map(([id])=>id)];
 gallery.innerHTML=ids.map(id=>`<article class="pet-card">${creatureArt(id,4)}<h2>${CREATURES[id].name}</h2><span role="status">きょうも、よろしく！</span><button data-pet="${id}">よろこぶ</button></article>`).join('');
