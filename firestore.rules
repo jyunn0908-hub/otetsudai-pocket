@@ -10,6 +10,7 @@ service cloud.firestore {
       allow create, update: if parent(family);
       allow delete: if false;
       match /care/{careId} {
+        function roundSeconds(session) { return session.matches('catch:.*') ? 20 : 30; }
         function today() { return int((request.time.toMillis() + 32400000) / 86400000); }
         function valid() {
           let d=request.resource.data;
@@ -19,7 +20,7 @@ service cloud.firestore {
             && d.balance is int && d.balance >= 0
             && d.session is string && d.session.size() > 0 && d.session.size() <= 64
             && d.startedAt is timestamp && d.claimed is bool
-            && d.score is int && d.score >= 0 && d.score <= 30
+            && d.score is int && d.score >= (d.session.matches('catch:.*') ? -5 : 0) && d.score <= 30
             && d.meals.keys().hasAll(['berry','fish','soup']) && d.meals.keys().hasOnly(['berry','fish','soup'])
             && d.meals.berry is int && d.meals.berry >= 0
             && d.meals.fish is int && d.meals.fish >= 0
@@ -32,14 +33,14 @@ service cloud.firestore {
           return d.diff(old).affectedKeys().hasOnly(['day','used','session','startedAt','claimed','score'])
             && d.day == today() && d.startedAt == request.time && !d.claimed && d.score == 0
             && d.session != old.session
-            && (old.claimed || request.time >= old.startedAt + duration.value(30,'s'))
+            && (old.claimed || request.time >= old.startedAt + duration.value(roundSeconds(old.session),'s'))
             && d.used == (old.day == today() ? old.used + 1 : 1);
         }
         function finish() {
           let d=request.resource.data;let old=resource.data;
           return d.diff(old).affectedKeys().hasOnly(['claimed','score','balance'])
             && !old.claimed && d.claimed
-            && request.time >= old.startedAt + duration.value(30,'s')
+            && request.time >= old.startedAt + duration.value(roundSeconds(old.session),'s')
             && d.balance == old.balance + 5 + d.score;
         }
         function feed() {
