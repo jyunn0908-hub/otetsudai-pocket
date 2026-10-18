@@ -1,14 +1,14 @@
-import {newId} from './ids.mjs?art=19';
-import {mountRhythm,rhythmAudio} from './rhythm-game.mjs?art=19';
-import {mountBento} from './bento-game.mjs?art=19';
-import {emptyCare,remaining,beginCare,finishCare,feedCare,saveCare,FOODS} from './care.mjs?art=19';
-import {mountCatch,loadPetSheet} from './catch-game.mjs?art=19';
-import {savePlacement,placeItem} from './garden.mjs?art=19';
-import {gardenContent,animateGarden} from './garden-view.mjs?art=19';
-import {advance,archive,nextEgg,SPECIES} from './growth.mjs?art=19';
-import {creatureArt,growthContent,growthNotice} from './growth-view.mjs?art=19';
+import {newId} from './ids.mjs?art=20';
+import {mountRhythm,rhythmAudio} from './rhythm-game.mjs?art=20';
+import {mountBento} from './bento-game.mjs?art=20';
+import {emptyCare,remaining,beginCare,finishCare,feedCare,saveCare,FOODS,roundDuration} from './care.mjs?art=20';
+import {mountCatch,loadPetSheet} from './catch-game.mjs?art=20';
+import {savePlacement,placeItem} from './garden.mjs?art=20';
+import {gardenContent,animateGarden} from './garden-view.mjs?art=20';
+import {advance,archive,nextEgg,SPECIES} from './growth.mjs?art=20';
+import {creatureArt,growthContent,growthNotice} from './growth-view.mjs?art=20';
 import {firebaseConfig} from './config.js';
-import {initialState,dayKey,approve,validateItem,choreStats,choreStreaks,CHORE_BONUSES} from './domain.mjs?art=19';
+import {initialState,dayKey,approve,validateItem,choreStats,choreStreaks,CHORE_BONUSES} from './domain.mjs?art=20';
 const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 let demo=!firebaseConfig,role='child',tab='chores',state=initialState(),requests=[],joins=[],uid='demo-child',family='',user=null,api=null,stops=[],busy=false,ready=false,member=false,joinStatus='',loadError='';
 let inviteFamily=new URLSearchParams(location.hash.slice(1)).get('family')||localStorage.getItem('pocket-family')||'';
@@ -26,10 +26,10 @@ function current(){return state.accounts[uid]||Object.values(state.accounts)[0]|
 function careContent(){
  const left=remaining(care),child=role==='child';
  return `<section class="care-home"><div class="section-head"><div><h2>あそんで、おせわしよう</h2><p>ごはん専用のポイントをためよう。</p></div><span class="pill">お世話 ${careReady?care.balance:'—'}pt</span></div>${careError?`<p role="alert">${careError}</p><button data-action="careRetry">もう一度読みこむ</button>`:''}<div class="care-hero">${creatureArt(state.growth?.stage?state.growth.character:'baby')}<div><h3>きょうは何してあそぶ？</h3><p>3つのゲームを合わせて<br>あと <strong>${careReady?left:'—'} / 5回</strong></p></div></div><div class="game-choices">${[
- ['catch','🍎','くだものキャッチ','30秒 · 左右に動いてくだもの集め'],
+ ['catch','🍎','くだものキャッチ','20秒 · くだもの＋1pt、ばくだん−2pt'],
  ['rhythm','🥁','まねっこリズム','約30秒 · お手本に合わせてトン♪'],
  ['bento','🍱','おべんとうパズル','3問 · 時間制限なしでじっくり']
- ].map(([id,icon,title,text])=>`<article><span aria-hidden="true">${icon}</span><h3>${title}</h3><p>${text}</p><button class="primary" data-action="gameStart" data-id="${id}" aria-label="${title}であそぶ" ${!child||!careReady||left<=0?'disabled':''}>${!child?'子供のスマホであそべます':!careReady?'読みこみ中…':left<=0?'また明日あそぼう！':'あそぶ！'}</button></article>`).join('')}</div><p class="care-help">どれも参加で5pt ＋ がんばりボーナス。回数は日本時間の午前0時に戻るよ。始めると1回分を使います。パズルのヒントは減点なし！</p><h3>ごはんをえらぼう</h3><div class="care-foods">${FOODS.map(f=>`<article><span aria-hidden="true">${f.emoji}</span><h4>${f.name}</h4><p>${f.cost} お世話pt</p><button data-action="feed" data-id="${f.id}" ${!child||!careReady||care.balance<f.cost?'disabled':''}>${care.balance<f.cost?'あと'+(f.cost-care.balance)+'pt':'食べさせる'}</button></article>`).join('')}</div><p class="care-help">ごはんを忘れても大丈夫。ごほうびのポイントや成長ポイントは減りません。タマゴのときは、ポケットのこがおともするよ。</p></section>`;
+ ].map(([id,icon,title,text])=>`<article><span aria-hidden="true">${icon}</span><h3>${title}</h3><p>${text}</p><button class="primary" data-action="gameStart" data-id="${id}" aria-label="${title}であそぶ" ${!child||!careReady||left<=0?'disabled':''}>${!child?'子供のスマホであそべます':!careReady?'読みこみ中…':left<=0?'また明日あそぼう！':'あそぶ！'}</button></article>`).join('')}</div><p class="care-help">参加5pt ＋ がんばりボーナス。キャッチの爆弾は−2pt（獲得は最低0pt）。回数は日本時間の午前0時に戻るよ。始めると1回分を使います。パズルのヒントは減点なし！</p><h3>ごはんをえらぼう</h3><div class="care-foods">${FOODS.map(f=>`<article><span aria-hidden="true">${f.emoji}</span><h4>${f.name}</h4><p>${f.cost} お世話pt</p><button data-action="feed" data-id="${f.id}" ${!child||!careReady||care.balance<f.cost?'disabled':''}>${care.balance<f.cost?'あと'+(f.cost-care.balance)+'pt':'食べさせる'}</button></article>`).join('')}</div><p class="care-help">ごはんを忘れても大丈夫。ごほうびのポイントや成長ポイントは減りません。タマゴのときは、ポケットのこがおともするよ。</p></section>`;
 }
 function watchCare(){
  if(demo){careReady=true;return}careStop?.();careReady=false;careError='';
@@ -53,15 +53,15 @@ async function startGame(kind){
   gameStop?.();gameStop=null;pendingGame={id,score,label};
   // All games use the same receipt and 30s minimum. Fast puzzle solvers see
   // their completed lunchboxes while the existing server-time gate elapses.
-  const wait=Math.max(0,30100-(performance.now()-started));
+  const wait=Math.max(0,roundDuration(id)+100-(performance.now()-started));
   if(wait){show(`<h2>${esc(label)}</h2><div class="care-fed">${creatureArt(character)}</div><p role="status">できあがり！ ポイントの準備をしているよ。</p>`);const timer=setTimeout(()=>{gameStop=null;completeGame().catch(err)},wait);gameStop=()=>clearTimeout(timer)}
   else completeGame().catch(err);
  };
  const head=title=>`<div class="catch-head"><span>${title}</span><small>${demo?'おためし · ':''}あと${remaining(care)}回 / 5回</small></div>`;
  if(kind==='catch'){
   modal.classList.add('catch-modal');
-  show(`${head('🌱 くだものキャッチ')}<div class="catch-hud"><span>のこり <strong data-timer>30</strong>秒</span><span>🍎 <strong data-score>0</strong>こ ゲット！</span></div><canvas class="catch-field" width="288" height="360" tabindex="0" aria-label="くだものキャッチ。指を左右に動かすか、左右の矢印キーで操作"></canvas><div class="catch-controls"><button data-move="-1" aria-label="左へ">◀</button><span>左右にスライド！</span><button data-move="1" aria-label="右へ">▶</button></div>`);
-  gameStop=mountCatch(modal,{sheet,character,onFinish:score=>finish(score,`${score}こ キャッチ！`)});
+  show(`${head('🌱 くだものキャッチ')}<div class="catch-hud"><span>のこり <strong data-timer>20</strong>秒</span><span>獲得予定 <strong data-score>5</strong>pt</span></div><canvas class="catch-field" width="288" height="360" tabindex="0" aria-label="くだものキャッチ。指を左右に動かすか、左右の矢印キーで操作"></canvas><div class="catch-controls"><button data-move="-1" aria-label="左へ">◀</button><span>🍎＋1pt 💣−2pt</span><button data-move="1" aria-label="右へ">▶</button></div>`);
+  gameStop=mountCatch(modal,{sheet,character,onFinish:finish});
  }else if(kind==='rhythm'){
   modal.classList.add('mini-modal');
   show(`${head('🥁 まねっこリズム')}<div class="mini-top"><span><b data-phrase>1</b> / 5 フレーズ</span><button data-sound aria-pressed="true">音：オン</button></div><div class="rhythm-stage">${creatureArt(character)}<strong data-rhythm-status role="status">おてほんを見てね</strong></div><div class="rhythm-notes" data-notes></div><progress data-beat-progress max="6000" value="0" aria-label="フレーズの進み具合"></progress><p class="mini-help">お手本のあと、光るタイミングでタップ！</p><div class="rhythm-pads"><button class="lane-0" data-pad="0" aria-label="ひだりの太鼓">🥁<b>ひだり</b></button><button class="lane-1" data-pad="1" aria-label="みぎの太鼓">🥁<b>みぎ</b></button></div><p data-feedback class="mini-feedback" role="status">トン・トン・トン♪</p><small>音なしでもOK。キーボードは ← → または D・K。</small>`);
