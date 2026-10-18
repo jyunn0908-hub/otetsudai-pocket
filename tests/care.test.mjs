@@ -21,5 +21,22 @@ test('ご飯の残高不足・二重リトライ・異なるご飯と累積の�
 });
 test('果物キャッチは1個1回、外れは加算せず、背景復帰の大量生成なし',()=>{
  const s=createRound();s.spawned=30;s.fruits=[{x:144,y:294,kind:0},{x:20,y:294,kind:1}];stepRound(s,10000,20);assert.equal(s.score,1);stepRound(s,11000,20);assert.equal(s.score,1);
- const background=createRound();stepRound(background,20000,20000,()=>0.5);assert.equal(background.fruits.length,1);
+ const background=createRound();stepRound(background,10000,10000,()=>0.5);assert.equal(background.fruits.length,1);
+});
+
+test('爆弾は一度だけ−2、取り逃しは減点なし、獲得額は0以上',()=>{
+ const s=createRound();s.spawned=30;s.fruits=[{x:144,y:294,kind:3},{x:20,y:294,kind:3}];
+ stepRound(s,10000,20);assert.equal(s.score,-2);assert.equal(s.bombs,1);
+ stepRound(s,11000,20);assert.equal(s.score,-2);
+ const c=beginCare({...emptyCare(),balance:25},'catch:bomb',now);
+ assert.throws(()=>finishCare(c,c.session,-2,now+19999));
+ assert.equal(finishCare(c,c.session,-2,now+20000).balance,28);
+ assert.equal(finishCare(c,c.session,-5,now+20000).balance,25);
+ assert.throws(()=>finishCare(c,c.session,-6,now+20000));
+ assert.equal(beginCare(c,'rhythm:next',now+20000).used,2);
+ for(const kind of ['rhythm','bento']){const other=beginCare(null,kind+':test',now);assert.throws(()=>finishCare(other,other.session,0,now+20000));assert.throws(()=>finishCare(other,other.session,-2,now+30000))}
+});
+test('4個に1個が爆弾、終了直前・終了後は生成しない',()=>{
+ const s=createRound();stepRound(s,3000,0,()=>0.5);assert.equal(s.fruits[0].kind,3);
+ const late=createRound();stepRound(late,17000,0);stepRound(late,20000,0);assert.equal(late.fruits.length,0);
 });

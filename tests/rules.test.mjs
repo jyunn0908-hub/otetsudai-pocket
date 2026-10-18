@@ -144,6 +144,19 @@ try{
  await assertSucceeds(saveCare(careApi,'parent','feed',{id:'real-meal',food:'fish'}));
  await assertSucceeds(saveCare(careApi,'parent','feed',{id:'real-meal',food:'fish'}));
  assert.equal((await getDoc(careRef(kid))).data().balance,25);
+ // Catch alone allows a 20-second round and a penalty against this reward.
+ await seedCare({session:'catch:bombs',balance:25,startedAt:firestore.Timestamp.fromMillis(Date.now()-21000)});
+ await assertFails(updateDoc(careRef(kid),{claimed:true,score:-6,balance:24}));
+ await assertSucceeds(saveCare(careApi,'parent','finish',{id:'catch:bombs',score:-5}));
+ assert.equal((await getDoc(careRef(kid))).data().balance,25);
+ for(const session of ['catch:early','rhythm:early','bento:early']){
+  await seedCare({session,startedAt:firestore.Timestamp.fromMillis(Date.now()-(session.startsWith('catch:')?10000:21000))});
+  await assertFails(updateDoc(careRef(kid),{claimed:true,score:0,balance:5}));
+ }
+ await seedCare({session:'rhythm:negative'});
+ await assertFails(updateDoc(careRef(kid),{claimed:true,score:-2,balance:3}));
+ await seedCare({session:'catch:restart',startedAt:firestore.Timestamp.fromMillis(Date.now()-21000)});
+ await assertSucceeds(saveCare(careApi,'parent','start',{id:'bento:next'}));
  console.log('PASS: お世話5回制限・サーバー日付・同時開始/結果加算・ご飯残高・二重送信・家族外拒否・端末共有');
  await assertSucceeds(deleteDoc(doc(parent,'families','parent','members','kid')));
  await assertFails(getDoc(garden(kid,'find-3')));await assertFails(setDoc(garden(kid),placement));
